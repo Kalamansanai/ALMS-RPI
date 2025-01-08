@@ -1,0 +1,129 @@
+<html>
+    <head>
+        <title>Segmentation test</title>
+        <style>
+            img{
+                width: 640px;
+            }
+
+            input {
+                width: 100%;
+            }
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+        <script type="text/javascript">
+            function FindPosition(oElement)
+            {
+              if(typeof( oElement.offsetParent ) != "undefined")
+              {
+                for(var posX = 0, posY = 0; oElement; oElement = oElement.offsetParent)
+                {
+                  posX += oElement.offsetLeft;
+                  posY += oElement.offsetTop;
+                }
+                  return [ posX, posY ];
+                }
+                else
+                {
+                  return [ oElement.x, oElement.y ];
+                }
+            }
+
+            function GetCoordinates(e)
+            {
+                var button = "right"
+                var PosX = 0;
+                var PosY = 0;
+                var ImgPos;
+                ImgPos = FindPosition(myImg);
+                if (!e) var e = window.event;
+
+                if (e.button === 0) {
+                    button = "left"
+                }
+
+                if (e.pageX || e.pageY)
+                {
+                    PosX = e.pageX;
+                    PosY = e.pageY;
+                }
+                else if (e.clientX || e.clientY)
+                    {
+                    PosX = e.clientX + document.body.scrollLeft
+                        + document.documentElement.scrollLeft;
+                    PosY = e.clientY + document.body.scrollTop
+                        + document.documentElement.scrollTop;
+                    }
+                PosX = PosX - ImgPos[0];
+                PosY = PosY - ImgPos[1];
+
+                console.log(button+" - "+PosX+" - "+PosY);
+                crop(button, PosX, PosY);
+            }
+        </script>
+    </head>
+    <body>
+        <center>
+            <label id="mib">Min blue</label><input type="range" min="0" max="255" value="0" onchange="update(this.value, 'mib')">
+            <label id="mig">Min green</label><input type="range" min="0" max="255" value="0" onchange="update(this.value, 'mig')">
+            <label id="mir">Min red</label><input type="range" min="0" max="255" value="0" onchange="update(this.value, 'mir')">
+
+            <label id="mab">Max blue</label><input type="range" min="0" max="255" value="255" onchange="update(this.value, 'mab')">
+            <label id="mag">Max green</label><input type="range" min="0" max="255" value="255" onchange="update(this.value, 'mag')">
+            <label id="mar">Max red</label><input type="range" min="0" max="255" value="255" onchange="update(this.value, 'mar')">
+
+            <label id="cls">Closing</label><input type="range" min="0" max="100" value="0" onchange="update(this.value, 'cls')">
+	        <label id="opn">Opening</label><input type="range" min="0" max="100" value="0" onchange="update(this.value, 'opn')">
+
+            <label id="cam">Camera</label><input type="range" min="0" max="200" value="0" onchange="update(this.value, 'cam')">
+
+            <label id="trash">Trashold</label><input type="range" min="0" max="100" value="0" onchange="update(this.value, 'trash')">
+
+            <img id="myImgId" src="{{ url_for('video_feed') }}" width="100%">
+        </center>
+    </body>
+    <script>
+        function update(value, name){
+            console.log(name, value);
+
+            document.getElementById(name).innerHTML = name+": "+value;
+
+            $.ajax({
+                type: "POST",
+                url : "{{url_for('command')}}",
+                data: {
+                    "name": name,
+                    "value": value
+                },
+                success: function (data, textStatus, xhr) {
+                    console.log("POST OK", data);
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    console.log('POST ERROR\n', errorThrown);
+                }
+            });
+        }
+
+        function crop(name, x, y){
+            $.ajax({
+                type: "POST",
+                url : "{{url_for('crop')}}",
+                data: {
+                    "name": name,
+                    "x": x,
+                    "y": y
+                },
+                success: function (data, textStatus, xhr) {
+                    console.log("POST OK", data);
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    console.log('POST ERROR\n', errorThrown);
+                }
+            });
+        }
+
+        var myImg = document.getElementById("myImgId");
+        myImg.onmousedown = GetCoordinates;
+
+    </script>
+</html>
